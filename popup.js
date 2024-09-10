@@ -1,85 +1,122 @@
 document.addEventListener('DOMContentLoaded', () => {
-    const addJobButton = document.getElementById('addJobExperience');
-    const jobContainer = document.getElementById('jobExperienceContainer');
+    const addCustomFieldButton = document.getElementById('addCustomField');
+    const customFieldContainer = document.getElementById('customFieldContainer');
   
-    // Save data to Chrome storage
-    document.getElementById('saveData').addEventListener('click', () => {
-      const selectedFields = {};
+    // Load saved data from Chrome storage when the extension is opened
+    chrome.storage.local.get(['selectedFields', 'customFields'], function(result) {
+      const selectedFields = result.selectedFields || {};
+      const customFields = result.customFields || [];
   
-      // Collect all selected fields and values
-      document.querySelectorAll('.field-checkbox').forEach(checkbox => {
-        if (checkbox.checked) {
-          const field = checkbox.dataset.field;
-          const input = document.getElementById(field) || document.querySelector(`.${field}`);
-          selectedFields[field] = input ? input.value : '';
+      // Populate stored data into the form inputs
+      for (const field in selectedFields) {
+        const input = document.getElementById(field);
+        if (input) {
+          input.value = selectedFields[field];
         }
-      });
+      }
   
-      // Save the selected data to Chrome storage
-      chrome.storage.local.set(selectedFields, () => {
-        alert('Selected data saved!');
+      // Populate custom fields
+      customFields.forEach(customField => {
+        const customDiv = document.createElement('div');
+        customDiv.classList.add('customField', 'field-container');
+        customDiv.innerHTML = `
+          <label><input type="checkbox" class="customFieldCheckbox"> ${customField.label}</label>
+          <input type="text" class="customFieldLabel" value="${customField.label}" placeholder="Field Label">
+          <input type="text" class="customFieldValue" value="${customField.value}" placeholder="Field Value">
+        `;
+        customFieldContainer.appendChild(customDiv);
       });
     });
   
-    // Apply the selected fields to a job application
-    document.getElementById('applyData').addEventListener('click', () => {
+    // Apply only the selected fields
+    document.getElementById('applySelected').addEventListener('click', () => {
       chrome.tabs.query({ active: true, currentWindow: true }, (tabs) => {
         chrome.scripting.executeScript({
           target: { tabId: tabs[0].id },
-          function: autofillJobApplication
+          function: autofillForm
         });
       });
     });
   
-    // Allow dynamic addition of job experiences
-    addJobButton.addEventListener('click', () => {
-      const jobDiv = document.createElement('div');
-      jobDiv.classList.add('jobExperience', 'field-container');
-      jobDiv.innerHTML = `
-        <label><input type="checkbox" class="field-checkbox" data-field="jobTitle"> Job Title</label>
-        <button class="delete-field" data-field="jobTitle">Delete</button>
-        <input type="text" class="jobTitle" placeholder="Job Title">
-      `;
-      jobContainer.appendChild(jobDiv);
-    });
+    // Delete only the selected fields
+    document.getElementById('deleteSelected').addEventListener('click', () => {
+      const fieldsToDelete = [];
   
-    // Handle field deletion
-    document.body.addEventListener('click', (event) => {
-      if (event.target.classList.contains('delete-field')) {
-        const field = event.target.dataset.field;
-        document.querySelector(`[data-field="${field}"]`).closest('.field-container').remove();
-        chrome.storage.local.remove(field, () => {
-          console.log(`${field} deleted from storage`);
+      // Collect all selected fields and custom fields to be deleted
+      document.querySelectorAll('.field-checkbox:checked').forEach(checkbox => {
+        const field = checkbox.dataset.field;
+        fieldsToDelete.push(field);
+        document.getElementById(field).closest('.field-container').remove(); // Remove from UI
+      });
+  
+      document.querySelectorAll('.customFieldCheckbox:checked').forEach(checkbox => {
+        checkbox.closest('.customField').remove(); // Remove custom field from UI
+      });
+  
+      // Remove from Chrome storage
+      chrome.storage.local.get(['selectedFields', 'customFields'], function(result) {
+        const selectedFields = result.selectedFields || {};
+        const customFields = result.customFields || [];
+  
+        // Remove selected standard fields
+        fieldsToDelete.forEach(field => {
+          delete selectedFields[field];
         });
-      }
+  
+        // Remove checked custom fields
+        const updatedCustomFields = customFields.filter(field => {
+          const fieldLabel = field.label;
+          const isChecked = document.querySelector(`input[value="${fieldLabel}"]`).checked;
+          return !isChecked;
+        });
+  
+        // Save the updated data
+        chrome.storage.local.set({
+          selectedFields: selectedFields,
+          customFields: updatedCustomFields
+        });
+      });
     });
   
-    // Hook into job title input to suggest fields
-    document.getElementById('jobTitle').addEventListener('input', (event) => {
-      suggestFields(event.target.value);  // Call the suggestFields function when job title is entered
+    // Add new custom field section
+    addCustomFieldButton.addEventListener('click', () => {
+      const customDiv = document.createElement('div');
+      customDiv.classList.add('customField', 'field-container');
+      customDiv.innerHTML = `
+        <label><input type="checkbox" class="customFieldCheckbox"> Custom Field</label>
+        <input type="text" class="customFieldLabel" placeholder="Field Label">
+        <input type="text" class="customFieldValue" placeholder="Field Value">
+      `;
+      customFieldContainer.appendChild(customDiv);
     });
   });
   
-  // Autofill function to be injected into the job application page
-  function autofillJobApplication() {
-    chrome.storage.local.get(null, function(result) {
-      for (const field in result) {
+  // Autofill function to be injected into any form
+  function autofillForm() {
+    chrome.storage.local.get(['selectedFields', 'customFields'], function(result) {
+      const selectedFields = result.selectedFields || {};
+      const customFields = result.customFields || [];
+  
+      // Fill in only the selected fields
+      document.querySelectorAll('.field-checkbox:checked').forEach(checkbox => {
+        const field = checkbox.dataset.field;
         const inputField = document.querySelector(`input[name="${field}"], textarea[name="${field}"]`);
         if (inputField) {
-          inputField.value = result[field];
+          inputField.value = selectedFields[field];
         }
-      }
-    });
-  }
+      });
   
-  // Suggest fields based on job title
-  function suggestFields(jobTitle) {
-    if (jobTitle.toLowerCase().includes('software')) {
-      // Add suggestions for software-related jobs
-      alert('You may want to include: Programming Languages, Frameworks');
-    } else if (jobTitle.toLowerCase().includes('manager')) {
-      // Add suggestions for manager-related jobs
-      alert('You may want to include: Management Skills, Leadership Experience');
-    }
+      // Fill in only the selected custom fields
+      document.querySelectorAll('.customFieldCheckbox:checked').forEach(checkbox => {
+        const fieldLabel = checkbox.closest('.customField').querySelector('.customFieldLabel').value;
+        const customField = customFields.find(field => field.label === fieldLabel);
+        if (customField) {
+          const inputField = document.querySelector(`input[placeholder="${fieldLabel}"], textarea[placeholder="${fieldLabel}"]`);
+          if (inputField) {
+            inputField.value = customField.value;
+          }
+        }
+      });
+    });
   }
   
