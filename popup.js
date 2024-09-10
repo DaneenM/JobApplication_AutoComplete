@@ -28,6 +28,18 @@ document.addEventListener('DOMContentLoaded', () => {
       });
     });
   
+    // Automatically save field data when it is modified
+    document.querySelectorAll('input').forEach(input => {
+      input.addEventListener('input', () => {
+        saveData();
+      });
+    });
+  
+    // Auto-save custom fields as soon as they are modified
+    customFieldContainer.addEventListener('input', () => {
+      saveData();
+    });
+  
     // Apply only the selected fields
     document.getElementById('applySelected').addEventListener('click', () => {
       chrome.tabs.query({ active: true, currentWindow: true }, (tabs) => {
@@ -88,7 +100,38 @@ document.addEventListener('DOMContentLoaded', () => {
         <input type="text" class="customFieldValue" placeholder="Field Value">
       `;
       customFieldContainer.appendChild(customDiv);
+      saveData(); // Auto-save whenever a new custom field is added
     });
+  
+    // Save all data
+    function saveData() {
+      const selectedFields = {};
+  
+      // Collect all selected fields and their values
+      document.querySelectorAll('.field-checkbox').forEach(checkbox => {
+        const field = checkbox.dataset.field;
+        const input = document.getElementById(field);
+        if (input) {
+          selectedFields[field] = input.value;
+        }
+      });
+  
+      // Collect custom fields (label and value)
+      const customFields = [];
+      document.querySelectorAll('.customField').forEach(field => {
+        const label = field.querySelector('.customFieldLabel').value;
+        const value = field.querySelector('.customFieldValue').value;
+        if (label && value) {
+          customFields.push({ label, value });
+        }
+      });
+  
+      // Save both selected fields and custom fields
+      chrome.storage.local.set({
+        selectedFields: selectedFields,
+        customFields: customFields
+      });
+    }
   });
   
   // Autofill function to be injected into any form
