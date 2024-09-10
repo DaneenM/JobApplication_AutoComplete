@@ -6,7 +6,8 @@
     body { width: 300px; }
     input, textarea { margin: 5px 0; padding: 5px; width: 100%; }
     button { margin: 5px; padding: 10px; width: 100%; }
-    .field-container { display: flex; justify-content: space-between; }
+    .field-container { display: flex; justify-content: space-between; align-items: center; }
+    .customField { display: flex; justify-content: space-between; align-items: center; gap: 10px; }
   </style>
 </head>
 <body>
@@ -36,10 +37,11 @@
   <!-- Custom Fields Section -->
   <div id="customFieldContainer">
     <h4>Custom Fields</h4>
+    <!-- Custom Field -->
     <div class="customField field-container">
-      <label><input type="checkbox" class="customFieldCheckbox"> Custom Field</label>
-      <input type="text" class="customFieldLabel" placeholder="Field Label">
-      <input type="text" class="customFieldValue" placeholder="Field Value">
+      <input type="checkbox" class="customFieldCheckbox">
+      <input type="text" class="customFieldLabel" placeholder="Field Label" value="">
+      <input type="text" class="customFieldValue" placeholder="Field Value" value="">
     </div>
   </div>
   <button id="addCustomField">Add Another Custom Field</button>
