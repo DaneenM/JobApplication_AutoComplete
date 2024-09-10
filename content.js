@@ -4,18 +4,25 @@ window.onload = function() {
     const emailField = document.querySelector('input[name="email"]');
     const phoneField = document.querySelector('input[name="phone"], input[type="tel"]');
     const addressField = document.querySelector('input[name="address"]');
-  
-    // Retrieve stored data from Chrome storage
-    chrome.storage.local.get(['name', 'email', 'phone', 'address'], function(result) {
-        const name = result.name || '';
-        const email = result.email || '';
-        const phone = result.phone || '';
-        const address = result.address || '';
+    const jobTitleFields = document.querySelectorAll('input[name="job_title"], input[name="jobTitle"]');
+    const companyFields = document.querySelectorAll('input[name="company"]');
+    const workExperienceFields = document.querySelectorAll('textarea[name="work_experience"]');
+    const degreeFields = document.querySelectorAll('textarea[name="degree"]');
+    const schoolFields = document.querySelectorAll('textarea[name="school"]');
 
-        // Fill in the fields automatically
-        if (nameField) nameField.value = name;
-        if (emailField) emailField.value = email;
-        if (phoneField) phoneField.value = phone;
-        if (addressField) addressField.value = address;
-    });
-};
+    // Retrieve stored data from Chrome storage
+    chrome.storage.local.get(['name', 'email', 'phone', 'address', 'jobExperiences', 'educationEntries'], function(result) {
+        if (nameField) nameField.value = result.name || '';
+        if (emailField) emailField.value = result.email || '';
+        if (phoneField) phoneField.value = result.phone || '';
+        if (addressField) addressField.value = result.address || '';
+
+        // Fill multiple job experiences
+        result.jobExperiences?.forEach((job, index) => {
+            if (jobTitleFields[index]) jobTitleFields[index].value = job.jobTitle;
+            if (companyFields[index]) companyFields[index].value = job.company;
+            if (workExperienceFields[index]) workExperienceFields[index].value = job.workExperience;
+        });
+
+        // Fill multiple education entries
+        resu

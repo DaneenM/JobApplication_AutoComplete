@@ -3,17 +3,41 @@
 <head>
   <title>Job Application Autofill</title>
   <style>
-    body { width: 200px; }
-    input { margin: 5px 0; padding: 5px; width: 100%; }
+    body { width: 300px; }
+    input, textarea { margin: 5px 0; padding: 5px; width: 100%; }
     button { margin: 5px; padding: 10px; width: 100%; }
   </style>
 </head>
 <body>
   <h3>Save Your Info</h3>
+
+  <!-- Personal Info -->
   <input type="text" id="name" placeholder="Full Name">
   <input type="email" id="email" placeholder="Email">
   <input type="tel" id="phone" placeholder="Phone Number">
   <input type="text" id="address" placeholder="Address">
+
+  <!-- Dynamic Job Experience Section -->
+  <div id="jobExperienceContainer">
+    <h4>Job Experience</h4>
+    <div class="jobExperience">
+      <input type="text" class="jobTitle" placeholder="Job Title">
+      <input type="text" class="company" placeholder="Company Name">
+      <textarea class="workExperience" placeholder="Work Experience"></textarea>
+    </div>
+  </div>
+  <button id="addJobExperience">Add Another Job Experience</button>
+
+  <!-- Dynamic Education Section -->
+  <div id="educationContainer">
+    <h4>Education</h4>
+    <div class="education">
+      <textarea class="degree" placeholder="Degree/Certification"></textarea>
+      <textarea class="school" placeholder="School/Institution"></textarea>
+    </div>
+  </div>
+  <button id="addEducation">Add Another Education</button>
+
   <button id="saveData">Save</button>
 
   <script src="popup.js"></script>
