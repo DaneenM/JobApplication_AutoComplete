@@ -6,40 +6,52 @@
     body { width: 300px; }
     input, textarea { margin: 5px 0; padding: 5px; width: 100%; }
     button { margin: 5px; padding: 10px; width: 100%; }
+    .field-container { display: flex; justify-content: space-between; }
   </style>
 </head>
 <body>
   <h3>Save Your Info</h3>
 
   <!-- Personal Info -->
+  <div class="field-container">
+    <label><input type="checkbox" class="field-checkbox" data-field="name"> Full Name</label>
+    <button class="delete-field" data-field="name">Delete</button>
+  </div>
   <input type="text" id="name" placeholder="Full Name">
+
+  <div class="field-container">
+    <label><input type="checkbox" class="field-checkbox" data-field="email"> Email</label>
+    <button class="delete-field" data-field="email">Delete</button>
+  </div>
   <input type="email" id="email" placeholder="Email">
+
+  <div class="field-container">
+    <label><input type="checkbox" class="field-checkbox" data-field="phone"> Phone Number</label>
+    <button class="delete-field" data-field="phone">Delete</button>
+  </div>
   <input type="tel" id="phone" placeholder="Phone Number">
+
+  <div class="field-container">
+    <label><input type="checkbox" class="field-checkbox" data-field="address"> Address</label>
+    <button class="delete-field" data-field="address">Delete</button>
+  </div>
   <input type="text" id="address" placeholder="Address">
 
-  <!-- Dynamic Job Experience Section -->
+  <!-- Job Experience (can be added dynamically) -->
   <div id="jobExperienceContainer">
     <h4>Job Experience</h4>
-    <div class="jobExperience">
+    <div class="jobExperience field-container">
+      <label><input type="checkbox" class="field-checkbox" data-field="jobTitle"> Job Title</label>
+      <button class="delete-field" data-field="jobTitle">Delete</button>
       <input type="text" class="jobTitle" placeholder="Job Title">
-      <input type="text" class="company" placeholder="Company Name">
-      <textarea class="workExperience" placeholder="Work Experience"></textarea>
     </div>
   </div>
   <button id="addJobExperience">Add Another Job Experience</button>
 
-  <!-- Dynamic Education Section -->
-  <div id="educationContainer">
-    <h4>Education</h4>
-    <div class="education">
-      <textarea class="degree" placeholder="Degree/Certification"></textarea>
-      <textarea class="school" placeholder="School/Institution"></textarea>
-    </div>
-  </div>
-  <button id="addEducation">Add Another Education</button>
-
   <button id="saveData">Save</button>
+  <button id="applyData">Apply to Job</button>
 
+  <!-- Properly embed the script -->
   <script src="popup.js"></script>
 </body>
 </html>
