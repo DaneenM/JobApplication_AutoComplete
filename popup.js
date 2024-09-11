@@ -3,6 +3,8 @@ document.addEventListener('DOMContentLoaded', () => {
 
     const applyButton = document.getElementById('applySelected');
     const deleteButton = document.getElementById('deleteSelected');
+    const addCustomFieldButton = document.getElementById('addCustomField');
+    const customFieldContainer = document.getElementById('customFieldContainer');
 
     // Load saved data from Chrome storage when the extension is opened
     chrome.storage.local.get(['selectedFields'], function(result) {
@@ -67,9 +69,8 @@ document.addEventListener('DOMContentLoaded', () => {
         function detectFormField(fieldName) {
             const fieldSelectors = {
                 'name': ['input[name="name"]', 'input[autocomplete="name"]'],
-                'first_name': ['input[name="first_name"]', 'input[autocomplete="given-name"]'],
-                'middle_name': ['input[name="middle_name"]', 'input[autocomplete="additional-name"]'],
-                'last_name': ['input[name="last_name"]', 'input[autocomplete="family-name"]'],
+                'first_name': ['input[name="first_name"]', 'input[name="legal_first_name"]', 'input[autocomplete="given-name"]', 'input[name*="legal first"]'],
+                'last_name': ['input[name="last_name"]', 'input[name="legal_last_name"]', 'input[autocomplete="family-name"]', 'input[name*="legal last"]'],
                 'email': ['input[name="email"]', 'input[autocomplete="email"]'],
                 'phone': ['input[name="phone"]', 'input[autocomplete="tel"]'],
                 'address': ['input[name="address"]', 'input[autocomplete="street-address"]']
@@ -95,7 +96,6 @@ document.addEventListener('DOMContentLoaded', () => {
         // Autofill the fields
         const nameField = detectFormField('name');
         const firstNameField = detectFormField('first_name');
-        const middleNameField = detectFormField('middle_name');
         const lastNameField = detectFormField('last_name');
         const emailField = detectFormField('email');
         const phoneField = detectFormField('phone');
@@ -108,10 +108,6 @@ document.addEventListener('DOMContentLoaded', () => {
         if (firstNameField) {
             firstNameField.value = firstName;
             console.log(`Autofilled first name field with: ${firstName}`);
-        }
-        if (middleNameField) {
-            middleNameField.value = middleName;
-            console.log(`Autofilled middle name field with: ${middleName}`);
         }
         if (lastNameField) {
             lastNameField.value = lastName;
@@ -139,6 +135,7 @@ document.addEventListener('DOMContentLoaded', () => {
             document.getElementById('email').value = '';
             document.getElementById('phone').value = '';
             document.getElementById('address').value = '';
+            customFieldContainer.innerHTML = ''; // Clear custom fields
         });
     });
 
@@ -149,5 +146,16 @@ document.addEventListener('DOMContentLoaded', () => {
         if (field) {
             field.addEventListener('input', saveData);
         }
+    });
+
+    // Add custom field button logic
+    addCustomFieldButton.addEventListener('click', () => {
+        const customDiv = document.createElement('div');
+        customDiv.classList.add('customField', 'field-container');
+        customDiv.innerHTML = `
+            <input type="text" class="customFieldLabel" placeholder="Field Label">
+            <input type="text" class="customFieldValue" placeholder="Field Value">
+        `;
+        customFieldContainer.appendChild(customDiv);
     });
 });

@@ -8,6 +8,7 @@
     body { width: 300px; }
     input { margin: 5px 0; padding: 5px; width: 100%; }
     button { margin: 5px; padding: 10px; width: 100%; cursor: pointer; }
+    .customField { margin-top: 10px; }
   </style>
 </head>
 <body>
@@ -17,6 +18,12 @@
   <input type="email" id="email" placeholder="Email">
   <input type="tel" id="phone" placeholder="Phone Number">
   <input type="text" id="address" placeholder="Address">
+
+  <!-- Button to add custom fields -->
+  <button id="addCustomField">Add Custom Field</button>
+
+  <!-- Container for custom fields -->
+  <div id="customFieldContainer"></div>
 
   <button id="applySelected">Apply Data</button>
   <button id="deleteSelected">Delete All Data</button>
