@@ -2,8 +2,29 @@ document.addEventListener('DOMContentLoaded', () => {
     console.log("DOM fully loaded and parsed.");
 
     const applyButton = document.getElementById('applySelected');
+    const deleteButton = document.getElementById('deleteSelected');
 
-    // Save data function (now handles multiple fields)
+    // Load saved data from Chrome storage when the extension is opened
+    chrome.storage.local.get(['selectedFields'], function(result) {
+        const selectedFields = result.selectedFields || {};
+
+        // Populate stored data into the form inputs
+        const nameField = document.getElementById('name');
+        const emailField = document.getElementById('email');
+        const phoneField = document.getElementById('phone');
+
+        if (nameField && selectedFields['name']) {
+            nameField.value = selectedFields['name'];
+        }
+        if (emailField && selectedFields['email']) {
+            emailField.value = selectedFields['email'];
+        }
+        if (phoneField && selectedFields['phone']) {
+            phoneField.value = selectedFields['phone'];
+        }
+    });
+
+    // Save data function (auto-saves when input is modified)
     function saveData() {
         const selectedFields = {};
 
@@ -20,7 +41,7 @@ document.addEventListener('DOMContentLoaded', () => {
         chrome.storage.local.set({
             selectedFields: selectedFields
         }, function() {
-            console.log("Fields saved successfully.");
+            console.log("Fields saved successfully.", selectedFields);
         });
     }
 
@@ -89,11 +110,65 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     // Save the fields when they are modified
+    function addAutoSaveListener(field) {
+        if (field) {
+            field.addEventListener('input', () => {
+                console.log(`${field.id} field modified, saving...`);
+                saveData();
+            });
+        }
+    }
+
     const nameField = document.getElementById('name');
     const emailField = document.getElementById('email');
     const phoneField = document.getElementById('phone');
 
-    if (nameField) nameField.addEventListener('input', saveData);
-    if (emailField) emailField.addEventListener('input', saveData);
-    if (phoneField) phoneField.addEventListener('input', saveData);
+    // Attach auto-save listener to each field
+    addAutoSaveListener(nameField);
+    addAutoSaveListener(emailField);
+    addAutoSaveListener(phoneField);
+
+    // Delete functionality (only deletes checked fields)
+    deleteButton.addEventListener('click', () => {
+        const checkboxes = document.querySelectorAll('.delete-checkbox:checked');
+        const fieldsToDelete = [];
+
+        checkboxes.forEach(checkbox => {
+            const field = checkbox.dataset.field;
+            fieldsToDelete.push(field);
+            document.getElementById(field).value = ''; // Clear the field in the UI
+        });
+
+        // Remove the selected fields from Chrome storage
+        chrome.storage.local.get(['selectedFields'], function(result) {
+            const selectedFields = result.selectedFields || {};
+            fieldsToDelete.forEach(field => {
+                delete selectedFields[field];
+            });
+
+            chrome.storage.local.set({
+                selectedFields: selectedFields
+            }, function() {
+                console.log("Selected fields deleted.");
+            });
+        });
+    });
+
+    // Dynamically create checkboxes for each field
+    function createCheckbox(fieldId) {
+        const checkbox = document.createElement('input');
+        checkbox.type = 'checkbox';
+        checkbox.classList.add('delete-checkbox');
+        checkbox.dataset.field = fieldId;
+        return checkbox;
+    }
+
+    // Add checkboxes for delete functionality next to each field
+    const nameCheckbox = createCheckbox('name');
+    const emailCheckbox = createCheckbox('email');
+    const phoneCheckbox = createCheckbox('phone');
+
+    document.querySelector('#name').parentElement.appendChild(nameCheckbox);
+    document.querySelector('#email').parentElement.appendChild(emailCheckbox);
+    document.querySelector('#phone').parentElement.appendChild(phoneCheckbox);
 });
