@@ -1,0 +1,54 @@
+/* Basic body styling */
+body {
+    width: 300px;
+    font-family: Arial, sans-serif;
+    padding: 10px;
+}
+
+/* Input and button styling */
+input, textarea, button {
+    margin: 5px 0;
+    padding: 5px;
+    width: 100%;
+    box-sizing: border-box;
+}
+
+/* Button styles */
+button {
+    padding: 10px;
+    width: 100%;
+    background-color: #007BFF;
+    color: white;
+    border: none;
+    border-radius: 4px;
+    cursor: pointer;
+}
+
+button:hover {
+    background-color: #0056b3;
+}
+
+/* Field container styling */
+.field-container {
+    margin-bottom: 10px;
+}
+
+/* Custom fields section */
+.customField {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 10px;
+}
+
+/* Highlighted field styling */
+.highlight {
+    border: 2px solid orange;
+    background-color: #fff7e6; /* Light orange background */
+}
+
+/* Headings styling */
+h3, h4 {
+    margin-top: 0;
+    font-size: 1.2em;
+}
