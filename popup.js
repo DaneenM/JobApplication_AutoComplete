@@ -12,6 +12,7 @@ document.addEventListener('DOMContentLoaded', () => {
         const nameField = document.getElementById('name');
         const emailField = document.getElementById('email');
         const phoneField = document.getElementById('phone');
+        const addressField = document.getElementById('address');
 
         if (nameField && selectedFields['name']) {
             nameField.value = selectedFields['name'];
@@ -22,37 +23,56 @@ document.addEventListener('DOMContentLoaded', () => {
         if (phoneField && selectedFields['phone']) {
             phoneField.value = selectedFields['phone'];
         }
+        if (addressField && selectedFields['address']) {
+            addressField.value = selectedFields['address'];
+        }
     });
 
     // Save data function (auto-saves when input is modified)
     function saveData() {
         const selectedFields = {};
 
-        // Collect values from multiple fields (name, email, etc.)
         const nameField = document.getElementById('name');
         const emailField = document.getElementById('email');
         const phoneField = document.getElementById('phone');
+        const addressField = document.getElementById('address');
 
         if (nameField) selectedFields['name'] = nameField.value;
         if (emailField) selectedFields['email'] = emailField.value;
         if (phoneField) selectedFields['phone'] = phoneField.value;
+        if (addressField) selectedFields['address'] = addressField.value;
 
         // Save the fields to local storage
-        chrome.storage.local.set({
-            selectedFields: selectedFields
-        }, function() {
+        chrome.storage.local.set({ selectedFields: selectedFields }, function() {
             console.log("Fields saved successfully.", selectedFields);
         });
     }
 
-    // Injected content script to detect form fields and autofill
-    function injectedAutofillScript(selectedFields) {
-        // Detect form fields based on partial ID, name, or class matching
+    // Apply button logic: Autofill saved data
+    applyButton.addEventListener('click', () => {
+        chrome.storage.local.get(['selectedFields'], function(result) {
+            const selectedFields = result.selectedFields || {};
+            chrome.tabs.query({ active: true, currentWindow: true }, (tabs) => {
+                chrome.scripting.executeScript({
+                    target: { tabId: tabs[0].id },
+                    function: autofillForm, // Inject autofill function
+                    args: [selectedFields] // Pass saved data as an argument
+                });
+            });
+        });
+    });
+
+    // Autofill function to be injected into the active tab
+    function autofillForm(selectedFields) {
         function detectFormField(fieldName) {
             const fieldSelectors = {
-                'name': ['input[name="name"]', 'input[id^="jv-field"]', 'input[autocomplete="name"]'],
+                'name': ['input[name="name"]', 'input[autocomplete="name"]'],
+                'first_name': ['input[name="first_name"]', 'input[autocomplete="given-name"]'],
+                'middle_name': ['input[name="middle_name"]', 'input[autocomplete="additional-name"]'],
+                'last_name': ['input[name="last_name"]', 'input[autocomplete="family-name"]'],
                 'email': ['input[name="email"]', 'input[autocomplete="email"]'],
-                'phone': ['input[name="phone"]', 'input[autocomplete="tel"]']
+                'phone': ['input[name="phone"]', 'input[autocomplete="tel"]'],
+                'address': ['input[name="address"]', 'input[autocomplete="street-address"]']
             };
 
             const selectors = fieldSelectors[fieldName] || [];
@@ -62,23 +82,40 @@ document.addEventListener('DOMContentLoaded', () => {
                 return !!field;
             });
 
-            if (field) {
-                console.log(`Detected ${fieldName} field:`, field);
-                return field;
-            } else {
-                console.warn(`No ${fieldName} field detected.`);
-                return null;
-            }
+            return field;
         }
 
-        // Autofill the detected fields
+        // Split full name into first, middle (or initial), and last
+        const fullName = selectedFields['name'] || '';
+        const nameParts = fullName.split(' ').filter(Boolean);
+        const firstName = nameParts[0] || '';
+        const middleName = nameParts.length > 2 ? nameParts.slice(1, -1).join(' ') : ''; // Middle name/initial if available
+        const lastName = nameParts.length > 1 ? nameParts[nameParts.length - 1] : '';
+
+        // Autofill the fields
         const nameField = detectFormField('name');
+        const firstNameField = detectFormField('first_name');
+        const middleNameField = detectFormField('middle_name');
+        const lastNameField = detectFormField('last_name');
         const emailField = detectFormField('email');
         const phoneField = detectFormField('phone');
+        const addressField = detectFormField('address');
 
         if (nameField) {
-            nameField.value = selectedFields['name'] || '';
-            console.log(`Autofilled name field with: ${selectedFields['name']}`);
+            nameField.value = fullName;
+            console.log(`Autofilled name field with: ${fullName}`);
+        }
+        if (firstNameField) {
+            firstNameField.value = firstName;
+            console.log(`Autofilled first name field with: ${firstName}`);
+        }
+        if (middleNameField) {
+            middleNameField.value = middleName;
+            console.log(`Autofilled middle name field with: ${middleName}`);
+        }
+        if (lastNameField) {
+            lastNameField.value = lastName;
+            console.log(`Autofilled last name field with: ${lastName}`);
         }
         if (emailField) {
             emailField.value = selectedFields['email'] || '';
@@ -88,87 +125,29 @@ document.addEventListener('DOMContentLoaded', () => {
             phoneField.value = selectedFields['phone'] || '';
             console.log(`Autofilled phone field with: ${selectedFields['phone']}`);
         }
-    }
-
-    // Apply button logic
-    if (applyButton) {
-        applyButton.addEventListener('click', () => {
-            console.log("Apply button clicked.");
-            chrome.storage.local.get(['selectedFields'], function(result) {
-                const selectedFields = result.selectedFields || {};
-
-                // Inject the autofill script into the active tab
-                chrome.tabs.query({ active: true, currentWindow: true }, (tabs) => {
-                    chrome.scripting.executeScript({
-                        target: { tabId: tabs[0].id },
-                        function: injectedAutofillScript, // Inject the function
-                        args: [selectedFields] // Pass saved data as an argument
-                    });
-                });
-            });
-        });
-    }
-
-    // Save the fields when they are modified
-    function addAutoSaveListener(field) {
-        if (field) {
-            field.addEventListener('input', () => {
-                console.log(`${field.id} field modified, saving...`);
-                saveData();
-            });
+        if (addressField) {
+            addressField.value = selectedFields['address'] || '';
+            console.log(`Autofilled address field with: ${selectedFields['address']}`);
         }
     }
 
-    const nameField = document.getElementById('name');
-    const emailField = document.getElementById('email');
-    const phoneField = document.getElementById('phone');
-
-    // Attach auto-save listener to each field
-    addAutoSaveListener(nameField);
-    addAutoSaveListener(emailField);
-    addAutoSaveListener(phoneField);
-
-    // Delete functionality (only deletes checked fields)
+    // Delete all saved data when clicking the delete button
     deleteButton.addEventListener('click', () => {
-        const checkboxes = document.querySelectorAll('.delete-checkbox:checked');
-        const fieldsToDelete = [];
-
-        checkboxes.forEach(checkbox => {
-            const field = checkbox.dataset.field;
-            fieldsToDelete.push(field);
-            document.getElementById(field).value = ''; // Clear the field in the UI
-        });
-
-        // Remove the selected fields from Chrome storage
-        chrome.storage.local.get(['selectedFields'], function(result) {
-            const selectedFields = result.selectedFields || {};
-            fieldsToDelete.forEach(field => {
-                delete selectedFields[field];
-            });
-
-            chrome.storage.local.set({
-                selectedFields: selectedFields
-            }, function() {
-                console.log("Selected fields deleted.");
-            });
+        chrome.storage.local.remove(['selectedFields'], function() {
+            console.log("All saved fields deleted.");
+            document.getElementById('name').value = '';
+            document.getElementById('email').value = '';
+            document.getElementById('phone').value = '';
+            document.getElementById('address').value = '';
         });
     });
 
-    // Dynamically create checkboxes for each field
-    function createCheckbox(fieldId) {
-        const checkbox = document.createElement('input');
-        checkbox.type = 'checkbox';
-        checkbox.classList.add('delete-checkbox');
-        checkbox.dataset.field = fieldId;
-        return checkbox;
-    }
-
-    // Add checkboxes for delete functionality next to each field
-    const nameCheckbox = createCheckbox('name');
-    const emailCheckbox = createCheckbox('email');
-    const phoneCheckbox = createCheckbox('phone');
-
-    document.querySelector('#name').parentElement.appendChild(nameCheckbox);
-    document.querySelector('#email').parentElement.appendChild(emailCheckbox);
-    document.querySelector('#phone').parentElement.appendChild(phoneCheckbox);
+    // Auto-save fields when modified
+    const fields = ['name', 'email', 'phone', 'address'];
+    fields.forEach(fieldId => {
+        const field = document.getElementById(fieldId);
+        if (field) {
+            field.addEventListener('input', saveData);
+        }
+    });
 });
