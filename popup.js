@@ -7,8 +7,9 @@ document.addEventListener('DOMContentLoaded', () => {
     const customFieldContainer = document.getElementById('customFieldContainer');
 
     // Load saved data from Chrome storage when the extension is opened
-    chrome.storage.local.get(['selectedFields'], function(result) {
+    chrome.storage.local.get(['selectedFields', 'customFields'], function(result) {
         const selectedFields = result.selectedFields || {};
+        const customFields = result.customFields || [];
 
         // Populate stored data into the form inputs
         const nameField = document.getElementById('name');
@@ -28,11 +29,17 @@ document.addEventListener('DOMContentLoaded', () => {
         if (addressField && selectedFields['address']) {
             addressField.value = selectedFields['address'];
         }
+
+        // Populate saved custom fields
+        customFields.forEach((customField, index) => {
+            addCustomFieldToDOM(customField.label, customField.value, index);
+        });
     });
 
     // Save data function (auto-saves when input is modified)
     function saveData() {
         const selectedFields = {};
+        const customFields = [];
 
         const nameField = document.getElementById('name');
         const emailField = document.getElementById('email');
@@ -44,10 +51,32 @@ document.addEventListener('DOMContentLoaded', () => {
         if (phoneField) selectedFields['phone'] = phoneField.value;
         if (addressField) selectedFields['address'] = addressField.value;
 
-        // Save the fields to local storage
-        chrome.storage.local.set({ selectedFields: selectedFields }, function() {
-            console.log("Fields saved successfully.", selectedFields);
+        // Collect custom fields' data
+        document.querySelectorAll('.customField').forEach((field, index) => {
+            const label = field.querySelector('.customFieldLabel').value;
+            const value = field.querySelector('.customFieldValue').value;
+            customFields.push({ label, value });
         });
+
+        // Save the fields to local storage
+        chrome.storage.local.set({ selectedFields: selectedFields, customFields: customFields }, function() {
+            console.log("Fields saved successfully.", selectedFields, customFields);
+        });
+    }
+
+    // Add custom field to DOM
+    function addCustomFieldToDOM(label = '', value = '', index = null) {
+        const customFieldDiv = document.createElement('div');
+        customFieldDiv.classList.add('customField');
+        customFieldDiv.innerHTML = `
+            <input type="text" class="customFieldLabel" placeholder="Field Label" value="${label}">
+            <input type="text" class="customFieldValue" placeholder="Field Value" value="${value}">
+        `;
+        customFieldContainer.appendChild(customFieldDiv);
+
+        // Add auto-save listeners to new custom fields
+        customFieldDiv.querySelector('.customFieldLabel').addEventListener('input', saveData);
+        customFieldDiv.querySelector('.customFieldValue').addEventListener('input', saveData);
     }
 
     // Apply button logic: Autofill saved data
@@ -69,8 +98,8 @@ document.addEventListener('DOMContentLoaded', () => {
         function detectFormField(fieldName) {
             const fieldSelectors = {
                 'name': ['input[name="name"]', 'input[autocomplete="name"]'],
-                'first_name': ['input[name="first_name"]', 'input[name="legal_first_name"]', 'input[autocomplete="given-name"]', 'input[name*="legal first"]'],
-                'last_name': ['input[name="last_name"]', 'input[name="legal_last_name"]', 'input[autocomplete="family-name"]', 'input[name*="legal last"]'],
+                'first_name': ['input[name="first_name"]', 'input[name="legal_first_name"]', 'input[autocomplete="given-name"]'],
+                'last_name': ['input[name="last_name"]', 'input[name="legal_last_name"]', 'input[autocomplete="family-name"]'],
                 'email': ['input[name="email"]', 'input[autocomplete="email"]'],
                 'phone': ['input[name="phone"]', 'input[autocomplete="tel"]'],
                 'address': ['input[name="address"]', 'input[autocomplete="street-address"]']
@@ -86,50 +115,29 @@ document.addEventListener('DOMContentLoaded', () => {
             return field;
         }
 
-        // Split full name into first, middle (or initial), and last
-        const fullName = selectedFields['name'] || '';
-        const nameParts = fullName.split(' ').filter(Boolean);
-        const firstName = nameParts[0] || '';
-        const middleName = nameParts.length > 2 ? nameParts.slice(1, -1).join(' ') : ''; // Middle name/initial if available
-        const lastName = nameParts.length > 1 ? nameParts[nameParts.length - 1] : '';
-
         // Autofill the fields
         const nameField = detectFormField('name');
-        const firstNameField = detectFormField('first_name');
-        const lastNameField = detectFormField('last_name');
         const emailField = detectFormField('email');
         const phoneField = detectFormField('phone');
         const addressField = detectFormField('address');
 
         if (nameField) {
-            nameField.value = fullName;
-            console.log(`Autofilled name field with: ${fullName}`);
-        }
-        if (firstNameField) {
-            firstNameField.value = firstName;
-            console.log(`Autofilled first name field with: ${firstName}`);
-        }
-        if (lastNameField) {
-            lastNameField.value = lastName;
-            console.log(`Autofilled last name field with: ${lastName}`);
+            nameField.value = selectedFields['name'] || '';
         }
         if (emailField) {
             emailField.value = selectedFields['email'] || '';
-            console.log(`Autofilled email field with: ${selectedFields['email']}`);
         }
         if (phoneField) {
             phoneField.value = selectedFields['phone'] || '';
-            console.log(`Autofilled phone field with: ${selectedFields['phone']}`);
         }
         if (addressField) {
             addressField.value = selectedFields['address'] || '';
-            console.log(`Autofilled address field with: ${selectedFields['address']}`);
         }
     }
 
     // Delete all saved data when clicking the delete button
     deleteButton.addEventListener('click', () => {
-        chrome.storage.local.remove(['selectedFields'], function() {
+        chrome.storage.local.remove(['selectedFields', 'customFields'], function() {
             console.log("All saved fields deleted.");
             document.getElementById('name').value = '';
             document.getElementById('email').value = '';
@@ -148,14 +156,8 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     });
 
-    // Add custom field button logic
+    // Add new custom field button logic
     addCustomFieldButton.addEventListener('click', () => {
-        const customDiv = document.createElement('div');
-        customDiv.classList.add('customField', 'field-container');
-        customDiv.innerHTML = `
-            <input type="text" class="customFieldLabel" placeholder="Field Label">
-            <input type="text" class="customFieldValue" placeholder="Field Value">
-        `;
-        customFieldContainer.appendChild(customDiv);
+        addCustomFieldToDOM(); // Add a new empty custom field
     });
 });
